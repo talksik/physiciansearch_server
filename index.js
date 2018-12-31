@@ -59,8 +59,12 @@ app.get('/physicianloc', function (req, res) {
         var query = 'SELECT * FROM physicians WHERE LOWER(first_name)=?' +
                       'AND LOWER(middle_name)=? AND LOWER(last_name)=?';
         connection.query(query, [first, middle, last], function (error, results, fields) {
-            if (error) throw error;
-
+            if (error) console.log(error);
+            if (results.length === 0) {
+              return res.status(400).send({
+                 message: 'Physician Not Found!'
+              });
+            }
             var result = res.status(200).send(results[0]);
 
             connection.release();
