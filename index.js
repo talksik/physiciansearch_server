@@ -39,17 +39,20 @@ app.get('/', function (req, res) {
 // Retreives the address, city, state, zip_code given the first, middle, and last name
 // of the physician
 app.get('/physicianloc', function (req, res) {
-    let first = req.query.first_name;
-    let middle = req.query.middle_name;
-    let last = req.query.last_name;
+    var name_parts = req.query.name.trim().toLowerCase().split();
+    let first = name_parts[0];
+    let last = name_parts[-1];
+    if (name_parts.length === 3) {
+      let middle = name_parts[1];
+    }
 
     pool.getConnection(function(err, connection) {
         if (err) throw err; // not connected!
 
         console.log('Connected to DB as id ' + connection.threadId + '!');
 
-        var query = 'SELECT * FROM physicians WHERE first_name=?' +
-                      'AND middle_name=? AND last_name=?';
+        var query = 'SELECT * FROM physicians WHERE LOWER(first_name)=?' +
+                      'AND LOWER(middle_name)=? AND LOWER(last_name)=?';
         connection.query(query, [first, middle, last], function (error, results, fields) {
             if (error) throw error;
 
