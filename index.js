@@ -1,23 +1,68 @@
 const http = require('http');
 const port = process.env.PORT || 3000;
+const express = require("express");
+const app = express();
+const bodyParser = require('body-parser');
+const mysql = require('mysql');
 
-var mysql      = require('mysql');
-// var connection = mysql.createConnection({
-//     host     : 'localhost',
-//     database : 'dbname',
-//     user     : 'username',
-//     password : 'password',
-// });
-//
-// connection.connect(function(err) {
-//     if (err) {
-//         console.error('Error connecting: ' + err.stack);
-//         return;
-//     }
-//
-//     console.log('Connected as id ' + connection.threadId);
-// });
-//
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: true}));
+
+var pool = mysql.createPool({
+    host     : 'us-cdbr-iron-east-01.cleardb.net',
+    database : 'heroku_0eb7f5cb78edbb4',
+    user     : 'b65a2ecbca8dd3',
+    password : '84489aa7',
+});
+
+
+app.listen(port, (err) => {
+  if (err) {
+    return console.log('something bad happened', err)
+  }
+
+  console.log(`server is listening on ${port}`)
+});
+
+pool.getConnection(function(err, connection) {
+    if (err) throw err; // not connected!
+
+    console.log('Connected to DB as id ' + connection.threadId + '!');
+    connection.release();
+});
+
+app.get('/', function (req, res) {
+  console.log('default route');
+  return res.status(200).send("at default route");
+});
+
+// Retreives the address, city, state, zip_code given the first, middle, and last name
+// of the physician
+app.get('/physicianloc', function (req, res) {
+    let first = req.query.first_name;
+    let middle = req.query.middle_name;
+    let last = req.query.last_name;
+
+    pool.getConnection(function(err, connection) {
+        if (err) throw err; // not connected!
+
+        console.log('Connected to DB as id ' + connection.threadId + '!');
+
+        var query = 'SELECT * FROM physicians WHERE first_name=?' +
+                      'AND middle_name=? AND last_name=?';
+        connection.query(query, [first, middle, last], function (error, results, fields) {
+            if (error) throw error;
+
+            var result = res.status(200).send(results);
+
+            connection.release();
+            return result;
+        });
+
+    });
+});
+
+
 // connection.query('SELECT * FROM employee', function (error, results, fields) {
 //     if (error)
 //         throw error;
@@ -28,19 +73,3 @@ var mysql      = require('mysql');
 // });
 //
 // connection.end();
-
-// content of index.js
-const requestHandler = (request, response) => {
-  console.log(request.url)
-  response.end('Hello Node.js Server!')
-}
-
-const server = http.createServer(requestHandler)
-
-server.listen(port, (err) => {
-  if (err) {
-    return console.log('something bad happened', err)
-  }
-
-  console.log(`server is listening on ${port}`)
-})
